@@ -5,7 +5,7 @@ use warnings;
 
 sub collect_top {
     my $interval = shift;
-    open TOP, "top -SHb -d 2 -s $interval |" or die "Can't spawn top: $!";
+    open TOP, "top -SHb -d 2 -s $interval 1000 |" or die "Can't spawn top: $!";
     my $got_stats = 0;
     my $timestamp = time;
     my %top;
