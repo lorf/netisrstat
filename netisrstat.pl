@@ -56,7 +56,7 @@ sub collect_netisr {
         } elsif ($got_stats) {
             my @row = split /\s+/, $_;
             next
-                unless grep { $row[2] =~ /^$_$/i } @{$proto_filter};
+                if @{$proto_filter} and not grep { $row[2] =~ /^$_$/i } @{$proto_filter};
             $data{$row[2]}{$row[0]} = {
                 wsid    => $row[0],
                 proto   => $row[2],
@@ -77,14 +77,14 @@ sub collect_netisr {
 
 my $interval = 1;
 my $count = 0;
-my @proto_filter = qw(ip arp ether);
+my @proto_filter = ();
 
 getopts 'hpf:', \%opts or &usage;
 
 &usage
     if $opts{h};
 
-if ($opts{f}) {
+if (defined $opts{f}) {
     @proto_filter = split ',', $opts{f};
 }
 
