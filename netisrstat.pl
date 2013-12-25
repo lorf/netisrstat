@@ -68,7 +68,11 @@ my $interval = 1;
 my $count = 0;
 my @proto_filter = qw(ip arp ether);
 
-getopts 'p', \%opts or die "$!";
+getopts 'pf:', \%opts or die "$!";
+
+if ($opts{f}) {
+    @proto_filter = split ',', $opts{f};
+}
 
 if (@ARGV > 0) {
     $interval = $ARGV[0];
