@@ -6,6 +6,17 @@ use warnings;
 use Getopt::Std;
 use vars qw(%opts);
 
+sub usage {
+    print <<_EOT_;
+usage: $0 [-p] [-f proto_filter]
+options:
+  -p         Display ISR statistics by protocol and ISR ID
+             (default is to display by ISR ID);
+  -f filter  Change protocol display filter (default: arp,ether,ip).
+_EOT_
+    exit 1;
+}
+
 sub collect_top {
     my $interval = shift;
     open TOP, "top -SHb -d 2 -s $interval 1000 |" or die "Can't spawn top: $!";
@@ -68,7 +79,10 @@ my $interval = 1;
 my $count = 0;
 my @proto_filter = qw(ip arp ether);
 
-getopts 'pf:', \%opts or die "$!";
+getopts 'hpf:', \%opts or &usage;
+
+&usage
+    if $opts{h};
 
 if ($opts{f}) {
     @proto_filter = split ',', $opts{f};
