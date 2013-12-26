@@ -4,11 +4,11 @@ use strict;
 use warnings;
 
 use Getopt::Std;
-use vars qw(%opts);
+use vars qw(%opts $interval $count $flag_collect_stats);
 
 sub usage {
     print <<_EOT_;
-usage: $0 [-p] [-f <proto_filter>] [<interval>]
+usage: $0 [-p] [-f <proto_filter>] [<interval> [<count>]]
 options:
   -p         Display statistics by protocol and ISR
              (default is to display by ISR);
@@ -18,19 +18,19 @@ _EOT_
 }
 
 sub collect_top {
-    my $interval = shift;
-    open TOP, "top -SHb -d 2 -s $interval 1000 |" or die "Can't spawn top: $!";
-    my $got_stats = 0;
+    my $cmd = "top -SHb -d 1 1000";
+    open TOP, "$cmd |" or die "Can't spawn \"$cmd\": $!";
+    my $got_stats;
     my $timestamp = time;
     my %top;
     while (<TOP>) {
         chomp;
         if (/^\s*PID\s/) {
-            $got_stats++;
-        } elsif($got_stats == 2) {
+            $got_stats = 1;
+        } elsif($got_stats) {
             s/^\s*//;
             my @d = split /\s+/, $_, 11;
-            if ($d[10] and $d[10] =~ /^intr{swi\d+: netisr (\d+)}$/) {
+            if ($d[10] and $d[10] =~ /^intr{.*\bnetisr\s*(\d+)}$/) {
                 my $wsid = $1;
                 my $pct = $d[9];
                 $pct =~ s/%$//;
@@ -75,32 +75,16 @@ sub collect_netisr {
     return \%data;
 }
 
-my $interval = 1;
-my $count = 0;
-my @proto_filter = ();
-
-getopts 'hpf:', \%opts or &usage;
-
-&usage
-    if $opts{h};
-
-if (defined $opts{f}) {
-    @proto_filter = split ',', $opts{f};
+sub timer_handler {
+    alarm $interval;
+    $flag_collect_stats = 1;
 }
 
-if (@ARGV > 0) {
-    $interval = $ARGV[0];
-    if (@ARGV > 1) {
-        $count = $ARGV[1];
-    }
-}
+sub print_stats {
+    my $netisr = shift;
+    my $pnetisr = shift;
+    my $top = shift;
 
-my ($pnetisr, $top, $netisr);
-$pnetisr = &collect_netisr(\@proto_filter);
-$top = &collect_top($interval);
-my $ii = 1;
-while (1) {
-    $netisr = &collect_netisr(\@proto_filter);
     if ($opts{p}) {
         printf "\n%8s %2s %5s %6s %8s %8s %8s %5s %8s %4s\n",
             "Proto", "ID", "QLen", "WMark", "Handled", "Disp'd", "HDisp'd", "QDrop", "Queued", "%CPU";
@@ -148,11 +132,50 @@ while (1) {
                 $top->{$wsid} || 0;
         }
     }
+}
 
-    last
-        if $count and $ii == $count;
+$interval = 1;
+$count = 0;
+my @proto_filter = ();
 
-    $pnetisr = $netisr;
-    $top = &collect_top($interval);
-    $ii++;
+&usage
+    if not getopts 'hpf:s', \%opts or $opts{h};
+
+if (defined $opts{f}) {
+    @proto_filter = split ',', $opts{f};
+}
+
+$interval = shift @ARGV
+    if @ARGV;
+$count = shift @ARGV
+    if @ARGV;
+
+{
+    my $ii = 1;
+    my $continue = 1;
+    my $prev_netisr;
+    local $SIG{'TERM'} = sub { $continue = 0 };
+    local $SIG{'ALRM'} = \&timer_handler;
+
+    &timer_handler;
+
+    while ($continue) {
+        if ($flag_collect_stats) {
+            my $netisr = &collect_netisr(\@proto_filter);
+            my $top = &collect_top($interval);
+
+            if ($prev_netisr) {
+                &print_stats($netisr, $prev_netisr, $top);
+            }
+            $prev_netisr = $netisr;
+
+            last
+                if $count and $ii == $count;
+            $ii++;
+        }
+
+        # Sleep. select is used as interruptable sleep as the use of sleep is not
+        # recommended in perlfunc section on alarm
+        select undef, undef, undef, $interval;
+    }
 }
