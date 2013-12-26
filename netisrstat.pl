@@ -8,11 +8,11 @@ use vars qw(%opts);
 
 sub usage {
     print <<_EOT_;
-usage: $0 [-p] [-f proto_filter]
+usage: $0 [-p] [-f <proto_filter>] [<interval>]
 options:
-  -p         Display ISR statistics by protocol and ISR ID
-             (default is to display by ISR ID);
-  -f filter  Change protocol display filter (default: arp,ether,ip).
+  -p         Display statistics by protocol and ISR
+             (default is to display by ISR);
+  -f filter  Protocol display filter (e.g. "ether,ip", empty by default).
 _EOT_
     exit 1;
 }
