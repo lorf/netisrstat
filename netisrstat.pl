@@ -18,27 +18,23 @@ _EOT_
     exit 1;
 }
 
-sub collect_top {
-    my $cmd = "top -SHb -d 1 1000";
-    open TOP, "$cmd |" or die "Can't spawn \"$cmd\": $!";
-    my $got_stats;
-    my $timestamp = time;
+sub collect_proc {
+    my $cmd = "ps Haxww -o %cpu,comm";
+    open PROC, "$cmd |" or die "Can't spawn \"$cmd\": $!";
     my %top;
-    while (<TOP>) {
+    my $ln = 0;
+    while (<PROC>) {
         chomp;
-        if (/^\s*PID\s/) {
-            $got_stats = 1;
-        } elsif($got_stats) {
-            s/^\s*//;
-            my @d = split /\s+/, $_, 11;
-            if ($d[10] and $d[10] =~ /^intr{.*\bnetisr\s*(\d+)}$/) {
-                my $wsid = $1;
-                my $pct = $d[9];
-                $pct =~ s/%$//;
-                $top{$wsid} = $pct;
+        s/^\s*//;
+        if ($ln > 0) {  # Skip header
+            my ($cpu, $cmd) = split /\s+/, $_, 2;
+            if ($cmd and $cmd =~ /\b(net)?isr\s*(\d+)$/) {
+                $top{$2} = $cpu;
             }
         }
+        $ln++;
     }
+    close PROC;
     return \%top;
 }
 
@@ -47,7 +43,6 @@ sub collect_netisr {
     my $proto_filter = shift;
     open STAT, "netstat -Q |" or die "Can't spawn \"netstat -Q\": $!";
     my $got_stats;
-    my $timestamp = time;
     my %data;
     while (<STAT>) {
         chomp;
@@ -57,7 +52,7 @@ sub collect_netisr {
         } elsif ($got_stats) {
             my @row = split /\s+/, $_;
             next
-                if @{$proto_filter} and not grep { $row[2] =~ /^$_$/i } @{$proto_filter};
+                if @{$proto_filter} and not grep { $row[2] eq $_ } @{$proto_filter};
             $data{$row[2]}{$row[0]} = {
                 wsid    => $row[0],
                 proto   => $row[2],
@@ -68,7 +63,6 @@ sub collect_netisr {
                 qdrops  => $row[7],
                 queued  => $row[8],
                 handled => $row[9],
-                time    => $timestamp,
             };
         }
     }
@@ -183,7 +177,7 @@ $count = shift @ARGV
     while ($continue) {
         if ($flag_collect_stats) {
             my $netisr = &collect_netisr(\@proto_filter);
-            my $top = &collect_top($interval);
+            my $top = &collect_proc($interval);
 
             if ($prev_netisr) {
                 &print_stats($netisr, $prev_netisr, $top);
