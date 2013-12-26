@@ -28,8 +28,8 @@ sub collect_proc {
         s/^\s*//;
         if ($ln > 0) {  # Skip header
             my ($cpu, $cmd) = split /\s+/, $_, 2;
-            if ($cmd and $cmd =~ /\b(net)?isr\s*(\d+)$/) {
-                $top{$2} = $cpu;
+            if ($cmd and $cmd =~ /\bnetisr\s*(\d+)$/) {
+                $top{$1} = $cpu;
             }
         }
         $ln++;
