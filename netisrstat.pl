@@ -82,30 +82,31 @@ sub print_stats {
     my $top = shift;
 
     if ($opts{p}) {
-        printf "\n%8s %2s %5s %6s %8s %8s %8s %5s %8s %4s\n",
-            "Proto", "ID", "QLen", "WMark", "Handled", "Disp'd", "HDisp'd", "QDrop", "Queued", "%CPU";
+        printf "\n%8s %2s %4s %5s %6s %8s %8s %8s %5s %8s\n",
+            "Proto", "ID", "%CPU", "QLen", "WMark", "Handled", "Disp'd", "HDisp'd", "QDrop", "Queued";
         for my $proto (sort keys %{$netisr}) {
             for my $wsid (sort keys %{$netisr->{$proto}}) {
                 my $row = $netisr->{$proto}{$wsid};
                 my $prow = $pnetisr->{$proto}{$wsid};
+                my $fmt = "%8s %2d %4.1f %5d %6d %8d %8d %8d %5d %8d\n";
                 if ($opts{S}) {
-                    printf "%8s %2d %5d %6d %8d %8d %8d %5d %8d %4d\n",
-                        $proto, $wsid, $row->{qlen}, $row->{wmark},
+                    printf $fmt,
+                        $proto, $wsid, $top->{$wsid} || 0,
+                        $row->{qlen}, $row->{wmark},
                         $row->{handled} - $prow->{handled},
                         $row->{dispd} - $prow->{dispd},
                         $row->{hdispd} - $prow->{hdispd},
                         $row->{qdrops} - $prow->{qdrops},
-                        $row->{queued} - $prow->{queued},
-                        $top->{$wsid} || 0;
+                        $row->{queued} - $prow->{queued};
                 } else {
-                    printf "%8s %2d %5d %6d %8d %8d %8d %5d %8d %4d\n",
-                        $proto, $wsid, $row->{qlen}, $row->{wmark},
+                    printf $fmt,
+                        $proto, $wsid, $top->{$wsid} || 0,
+                        $row->{qlen}, $row->{wmark},
                         ($row->{handled} - $prow->{handled}) / $time,
                         ($row->{dispd} - $prow->{dispd}) / $time,
                         ($row->{hdispd} - $prow->{hdispd}) / $time,
                         ($row->{qdrops} - $prow->{qdrops}) / $time,
-                        ($row->{queued} - $prow->{queued}) / $time,
-                        $top->{$wsid} || 0;
+                        ($row->{queued} - $prow->{queued}) / $time;
                 }
             }
         }
@@ -127,24 +128,25 @@ sub print_stats {
                 $nrow->{queued} += $row->{queued} - $prow->{queued};
             }
         }
-        printf "\n%2s %5s %6s %8s %8s %8s %5s %8s %4s\n",
-            "ID", "QLen", "WMark", "Handled", "Disp'd", "HDisp'd", "QDrop", "Queued", "%CPU";
+        printf "\n%2s %4s %5s %6s %8s %8s %8s %5s %8s\n",
+            "ID", "%CPU", "QLen", "WMark", "Handled", "Disp'd", "HDisp'd", "QDrop", "Queued";
         for my $wsid (sort keys %{$ni}) {
             my $nrow = $ni->{$wsid};
+            my $fmt = "%2d %4.1f %5d %6d %8d %8d %8d %5d %8d\n";
             if ($opts{S}) {
-                printf "%2d %5d %6d %8d %8d %8d %5d %8d %4d\n",
-                    $wsid, $nrow->{qlen}, $nrow->{wmark},
+                printf $fmt,
+                    $wsid, $top->{$wsid} || 0,
+                    $nrow->{qlen}, $nrow->{wmark},
                     $nrow->{handled}, $nrow->{dispd},
                     $nrow->{hdispd}, $nrow->{qdrops},
-                    $nrow->{queued},
-                    $top->{$wsid} || 0;
+                    $nrow->{queued};
             } else {
-                printf "%2d %5d %6d %8d %8d %8d %5d %8d %4d\n",
-                    $wsid, $nrow->{qlen}, $nrow->{wmark},
+                printf $fmt,
+                    $wsid, $top->{$wsid} || 0,
+                    $nrow->{qlen}, $nrow->{wmark},
                     $nrow->{handled} / $time, $nrow->{dispd} / $time,
                     $nrow->{hdispd} / $time, $nrow->{qdrops} / $time,
-                    $nrow->{queued} / $time,
-                    $top->{$wsid} || 0;
+                    $nrow->{queued} / $time;
             }
         }
     }
