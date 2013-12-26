@@ -82,13 +82,13 @@ sub print_stats {
     my $top = shift;
 
     if ($opts{p}) {
-        printf "\n%8s %2s %4s %5s %6s %8s %8s %8s %5s %8s\n",
+        printf "\n%6s %2s %4s %5s %6s %8s %8s %8s %5s %8s\n",
             "Proto", "ID", "%CPU", "QLen", "WMark", "Handled", "Disp'd", "HDisp'd", "QDrop", "Queued";
         for my $proto (sort keys %{$netisr}) {
             for my $wsid (sort keys %{$netisr->{$proto}}) {
                 my $row = $netisr->{$proto}{$wsid};
                 my $prow = $pnetisr->{$proto}{$wsid};
-                my $fmt = "%8s %2d %4.1f %5d %6d %8d %8d %8d %5d %8d\n";
+                my $fmt = "%6s %2d %4.1f %5d %6d %8d %8d %8d %5d %8d\n";
                 if ($opts{S}) {
                     printf $fmt,
                         $proto, $wsid, $top->{$wsid} || 0,
