@@ -76,6 +76,7 @@ sub timer_handler {
 }
 
 sub print_stats {
+    my $time = shift;
     my $netisr = shift;
     my $pnetisr = shift;
     my $top = shift;
@@ -99,11 +100,11 @@ sub print_stats {
                 } else {
                     printf "%8s %2d %5d %6d %8d %8d %8d %5d %8d %4d\n",
                         $proto, $wsid, $row->{qlen}, $row->{wmark},
-                        ($row->{handled} - $prow->{handled}) / $interval,
-                        ($row->{dispd} - $prow->{dispd}) / $interval,
-                        ($row->{hdispd} - $prow->{hdispd}) / $interval,
-                        ($row->{qdrops} - $prow->{qdrops}) / $interval,
-                        ($row->{queued} - $prow->{queued}) / $interval,
+                        ($row->{handled} - $prow->{handled}) / $time,
+                        ($row->{dispd} - $prow->{dispd}) / $time,
+                        ($row->{hdispd} - $prow->{hdispd}) / $time,
+                        ($row->{qdrops} - $prow->{qdrops}) / $time,
+                        ($row->{queued} - $prow->{queued}) / $time,
                         $top->{$wsid} || 0;
                 }
             }
@@ -140,9 +141,9 @@ sub print_stats {
             } else {
                 printf "%2d %5d %6d %8d %8d %8d %5d %8d %4d\n",
                     $wsid, $nrow->{qlen}, $nrow->{wmark},
-                    $nrow->{handled} / $interval, $nrow->{dispd} / $interval,
-                    $nrow->{hdispd} / $interval, $nrow->{qdrops} / $interval,
-                    $nrow->{queued} / $interval,
+                    $nrow->{handled} / $time, $nrow->{dispd} / $time,
+                    $nrow->{hdispd} / $time, $nrow->{qdrops} / $time,
+                    $nrow->{queued} / $time,
                     $top->{$wsid} || 0;
             }
         }
@@ -168,7 +169,7 @@ $count = shift @ARGV
 {
     my $ii = 1;
     my $continue = 1;
-    my $prev_netisr;
+    my ($prev_netisr, $prev_timestamp);
     local $SIG{'TERM'} = sub { $continue = 0 };
     local $SIG{'ALRM'} = \&timer_handler;
 
@@ -176,17 +177,20 @@ $count = shift @ARGV
 
     while ($continue) {
         if ($flag_collect_stats) {
+            my $timestamp = time;
             my $netisr = &collect_netisr(\@proto_filter);
-            my $top = &collect_proc($interval);
+            my $top = &collect_proc();
 
             if ($prev_netisr) {
-                &print_stats($netisr, $prev_netisr, $top);
+                &print_stats($timestamp - $prev_timestamp, $netisr, $prev_netisr, $top);
             }
             $prev_netisr = $netisr;
+            $prev_timestamp = $timestamp;
 
             last
                 if $count and $ii == $count;
             $ii++;
+            $flag_collect_stats = 0;
         }
 
         # Sleep. select is used as interruptable sleep as the use of sleep is not
