@@ -12,7 +12,8 @@ usage: $0 [-p] [-f <proto_filter>] [<interval> [<count>]]
 options:
   -p         Display statistics by protocol and ISR
              (default is to display by ISR);
-  -f filter  Protocol display filter (e.g. "ether,ip", empty by default).
+  -f filter  Protocol display filter (e.g. "ether,ip", empty by default);
+  -S         Show values per interval rather than per second.
 _EOT_
     exit 1;
 }
@@ -92,14 +93,25 @@ sub print_stats {
             for my $wsid (sort keys %{$netisr->{$proto}}) {
                 my $row = $netisr->{$proto}{$wsid};
                 my $prow = $pnetisr->{$proto}{$wsid};
-                printf "%8s %2d %5d %6d %8d %8d %8d %5d %8d %4d\n",
-                    $proto, $wsid, $row->{qlen}, $row->{wmark},
-                    $row->{handled} - $prow->{handled},
-                    $row->{dispd} - $prow->{dispd},
-                    $row->{hdispd} - $prow->{hdispd},
-                    $row->{qdrops} - $prow->{qdrops},
-                    $row->{queued} - $prow->{queued},
-                    $top->{$wsid} || 0;
+                if ($opts{S}) {
+                    printf "%8s %2d %5d %6d %8d %8d %8d %5d %8d %4d\n",
+                        $proto, $wsid, $row->{qlen}, $row->{wmark},
+                        $row->{handled} - $prow->{handled},
+                        $row->{dispd} - $prow->{dispd},
+                        $row->{hdispd} - $prow->{hdispd},
+                        $row->{qdrops} - $prow->{qdrops},
+                        $row->{queued} - $prow->{queued},
+                        $top->{$wsid} || 0;
+                } else {
+                    printf "%8s %2d %5d %6d %8d %8d %8d %5d %8d %4d\n",
+                        $proto, $wsid, $row->{qlen}, $row->{wmark},
+                        ($row->{handled} - $prow->{handled}) / $interval,
+                        ($row->{dispd} - $prow->{dispd}) / $interval,
+                        ($row->{hdispd} - $prow->{hdispd}) / $interval,
+                        ($row->{qdrops} - $prow->{qdrops}) / $interval,
+                        ($row->{queued} - $prow->{queued}) / $interval,
+                        $top->{$wsid} || 0;
+                }
             }
         }
     } else {
@@ -124,12 +136,21 @@ sub print_stats {
             "ID", "QLen", "WMark", "Handled", "Disp'd", "HDisp'd", "QDrop", "Queued", "%CPU";
         for my $wsid (sort keys %{$ni}) {
             my $nrow = $ni->{$wsid};
-            printf "%2d %5d %6d %8d %8d %8d %5d %8d %4d\n",
-                $wsid, $nrow->{qlen}, $nrow->{wmark},
-                $nrow->{handled}, $nrow->{dispd},
-                $nrow->{hdispd}, $nrow->{qdrops},
-                $nrow->{queued},
-                $top->{$wsid} || 0;
+            if ($opts{S}) {
+                printf "%2d %5d %6d %8d %8d %8d %5d %8d %4d\n",
+                    $wsid, $nrow->{qlen}, $nrow->{wmark},
+                    $nrow->{handled}, $nrow->{dispd},
+                    $nrow->{hdispd}, $nrow->{qdrops},
+                    $nrow->{queued},
+                    $top->{$wsid} || 0;
+            } else {
+                printf "%2d %5d %6d %8d %8d %8d %5d %8d %4d\n",
+                    $wsid, $nrow->{qlen}, $nrow->{wmark},
+                    $nrow->{handled} / $interval, $nrow->{dispd} / $interval,
+                    $nrow->{hdispd} / $interval, $nrow->{qdrops} / $interval,
+                    $nrow->{queued} / $interval,
+                    $top->{$wsid} || 0;
+            }
         }
     }
 }
@@ -139,7 +160,7 @@ $count = 0;
 my @proto_filter = ();
 
 &usage
-    if not getopts 'hpf:s', \%opts or $opts{h};
+    if not getopts 'hpf:S', \%opts or $opts{h};
 
 if (defined $opts{f}) {
     @proto_filter = split ',', $opts{f};
