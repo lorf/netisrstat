@@ -130,9 +130,9 @@ sub print_stats {
 
     my (@hdr, $hfmt, $fmt);
     if ($opts{p}) {
-        @hdr = qw(Proto ID %CPU QLen WMark Handled Disp'd HDisp'd QDrop Queued);
-        $hfmt = "\n%6s %3s %5s %5s %6s %8s %8s %8s %5s %8s\n";
-        $fmt =    "%6s %3s %5.1f %5d %6d %8d %8d %8d %5d %8d\n";
+        @hdr = qw(Proto ID %CPU QLen WMark Handled Disp'd HDisp'd Queued QDrops);
+        $hfmt = "\n%-6s %5s %6s %5s %6s %8s %8s %8s %8s %5s\n";
+        $fmt =    "%-6s %5s %6.1f %5d %6d %8d %8d %8d %8d %5d\n";
         printf $hfmt, @hdr;
         for my $proto (sort keys %out) {
             print "\n";
@@ -143,15 +143,15 @@ sub print_stats {
                     $row->{cpu}, $row->{qlen},
                     $row->{wmark}, $row->{handled},
                     $row->{dispd}, $row->{hdispd},
-                    $row->{qdrops}, $row->{queued};
+                    $row->{queued}, $row->{qdrops};
             }
             my $row = $out_proto_totals{$proto};
             printf $fmt,
-                $proto, "Tot",
+                $proto, "total",
                 $row->{cpu}, $row->{qlen},
                 $row->{wmark}, $row->{handled},
                 $row->{dispd}, $row->{hdispd},
-                $row->{qdrops}, $row->{queued};
+                $row->{queued}, $row->{qdrops};
         }
         print "\n";
         my $row = \%out_totals;
@@ -160,11 +160,11 @@ sub print_stats {
             $row->{cpu}, $row->{qlen},
             $row->{wmark}, $row->{handled},
             $row->{dispd}, $row->{hdispd},
-            $row->{qdrops}, $row->{queued};
+            $row->{queued}, $row->{qdrops};
     } else {
-        @hdr = qw(ID %CPU QLen WMark Handled Disp'd HDisp'd QDrop Queued);
-        $hfmt = "\n%3s %5s %5s %6s %8s %8s %8s %5s %8s\n";
-        $fmt =    "%3s %5.1f %5d %6d %8d %8d %8d %5d %8d\n";
+        @hdr = qw(ID %CPU QLen WMark Handled Disp'd HDisp'd Queued QDrops);
+        $hfmt = "\n%5s %6s %5s %6s %8s %8s %8s %8s %5s\n";
+        $fmt =    "%5s %6.1f %5d %6d %8d %8d %8d %8d %5d\n";
         printf $hfmt, @hdr;
         my $proto = "-";
         for my $id (sort keys %{$out{$proto}}) {
@@ -174,15 +174,15 @@ sub print_stats {
                 $row->{cpu}, $row->{qlen},
                 $row->{wmark}, $row->{handled},
                 $row->{dispd}, $row->{hdispd},
-                $row->{qdrops}, $row->{queued};
+                $row->{queued}, $row->{qdrops};
         }
         my $row = \%out_totals;
         printf $fmt,
-            "Tot",
+            "Total",
             $row->{cpu}, $row->{qlen},
             $row->{wmark}, $row->{handled},
             $row->{dispd}, $row->{hdispd},
-            $row->{qdrops}, $row->{queued};
+            $row->{queued}, $row->{qdrops};
     }
 }
 
