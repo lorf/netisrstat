@@ -203,7 +203,7 @@ $count = shift @ARGV
     if @ARGV;
 
 {
-    my $ii = 1;
+    my $ii = 0;
     my $continue = 1;
     my ($prev_netisr_stats, $prev_timestamp);
     local $SIG{'TERM'} = sub { $continue = 0 };
