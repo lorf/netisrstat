@@ -1,3 +1,8 @@
+This example shows some busy router with multiple em(4) interfaces and
+net.isr.dispatch=deferred, exhibiting lack of balancing over multiple netisr's.
+Each interface turns out to be bound to a particular netisr thread
+corresponding to interface number.
+
 [test@test13 ~/netisrstat]$ ./netisrstat.pl -p -f ip,ether 1 1
 
 Proto     ID   %CPU  QLen  WMark  Handled   Disp'd  HDisp'd   Queued QDrops
@@ -23,3 +28,47 @@ ip         7   27.4     0   7916     4261        0        0     4261     0
 ip     total   92.5     0  37058    13914        0        0    13914     0
 
 Total          92.5     0  37058    31659    17745        0    13914     0
+
+
+This test shows a virtual machine exhibiting the same behaviour. Test traffic
+is generated over one of the network interfaces. Netisr 1 shows some CPU usage
+while other threads are idle.
+
+[test@test14 ~/netisrstat]$ ./netisrstat.pl -p -f ip,ether 1 1
+
+Proto     ID   %CPU  QLen  WMark  Handled   Disp'd  HDisp'd   Queued QDrops
+
+ether      0    0.0     0      0      113      113        0        0     0
+ether      1   31.4     0      0      123      123        0        0     0
+ether      2    0.0     0      0       83       83        0        0     0
+ether  total   31.4     0      0      319      319        0        0     0
+
+ip         0    0.0     0    127        0        0        0        0     0
+ip         1   31.4     0    218    33694        0        0    33694     0
+ip         2    0.0     0    179       10        0        0       10     0
+ip     total   31.4     0    524    33704        0        0    33704     0
+
+Total          31.4     0    524    34023      319        0    33704     0
+
+
+In this test a patch (http://static.ipfw.ru/patches/netisr_ip_flowid.diff) is
+applied to the same virtual machine to balance ip traffic from one interface
+over multiple netisr threads. Network load, generated over one interface,
+spreads over multiple netisrs. However note the higher (about 35%) total CPU
+usage of the netisr threads.
+
+[test@test14 ~/netisrstat]$ ./netisrstat.pl -p -f ip,ether 1 1
+
+Proto     ID   %CPU  QLen  WMark  Handled   Disp'd  HDisp'd   Queued QDrops
+
+ether      0   14.1     0      0     1447     1447        0        0     0
+ether      1   14.4     0      0     1494     1494        0        0     0
+ether      2   14.6     0      0     1662     1662        0        0     0
+ether  total   43.1     0      0     4603     4603        0        0     0
+
+ip         0   14.1     0     89    12217        0        0    12217     0
+ip         1   14.4     0    218    12184        0        0    12184     0
+ip         2   14.6     0    179    12242        0        0    12242     0
+ip     total   43.1     0    486    36643        0        0    36643     0
+
+Total          43.1     0    486    41246     4603        0    36643     0
