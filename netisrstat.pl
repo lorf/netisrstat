@@ -13,6 +13,7 @@ options:
   -p         Display statistics by protocol and ISR
              (default is to display by ISR);
   -f filter  Protocol display filter (e.g. "ether,ip", empty by default);
+  -P         Shortcut for "-p -f ether,ip"
   -S         Show values per interval rather than per second.
 _EOT_
     exit 1;
@@ -191,7 +192,12 @@ $count = 0;
 my @proto_filter = ();
 
 &usage
-    if not getopts 'hpf:S', \%opts or $opts{h};
+    if not getopts 'hpf:SP', \%opts or $opts{h};
+
+if ($opts{P}) {
+	$opts{p} = 1;
+	$opts{f} = "ether,ip";
+}
 
 if (defined $opts{f}) {
     @proto_filter = split ',', $opts{f};
