@@ -110,7 +110,8 @@ sub print_stats {
 
             $out_proto_totals{$outproto}{cpu} += $cpu_stats->{$id} || 0;
             $out_proto_totals{$outproto}{qlen} += $row->{qlen};
-            $out_proto_totals{$outproto}{wmark} += $row->{wmark};
+            $out_proto_totals{$outproto}{wmark} = $row->{wmark}
+                if not $out_proto_totals{$outproto}{wmark} or $row->{wmark} > $out_proto_totals{$outproto}{wmark};
             $out_proto_totals{$outproto}{handled} += ($row->{handled} - $prow->{handled}) / $outdiv;
             $out_proto_totals{$outproto}{dispd} += ($row->{dispd} - $prow->{dispd}) / $outdiv;
             $out_proto_totals{$outproto}{hdispd} += ($row->{hdispd} - $prow->{hdispd}) / $outdiv;
@@ -118,7 +119,8 @@ sub print_stats {
             $out_proto_totals{$outproto}{queued} += ($row->{queued} - $prow->{queued}) / $outdiv;
 
             $out_totals{qlen} += $row->{qlen};
-            $out_totals{wmark} += $row->{wmark};
+            $out_totals{wmark} = $row->{wmark}
+                if not $out_totals{wmark} or $row->{wmark} > $out_totals{wmark};
             $out_totals{handled} += ($row->{handled} - $prow->{handled}) / $outdiv;
             $out_totals{dispd} += ($row->{dispd} - $prow->{dispd}) / $outdiv;
             $out_totals{hdispd} += ($row->{hdispd} - $prow->{hdispd}) / $outdiv;
