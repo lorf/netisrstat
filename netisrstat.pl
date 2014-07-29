@@ -133,9 +133,13 @@ sub print_stats {
 
     my (@hdr, $hfmt, $fmt);
     if ($opts{p}) {
-        @hdr = qw(Proto ID %CPU QLen WMark Handled Disp'd HDisp'd Queued QDrops);
-        $hfmt = "\n%-6s %5s %6s %5s %6s %8s %8s %8s %8s %5s\n";
-        $fmt =    "%-6s %5s %6.1f %5d %6d %8d %8d %8d %8d %5d\n";
+        if ($opts{S}) {
+            @hdr = qw(Proto ID %CPU QLen WMark Handled Disp'd HDisp'd Queued QDrops);
+        } else {
+            @hdr = qw(Proto ID %CPU QLen WMark Handled/s Disp'd/s HDisp'd/s Queued/s QDrops/s);
+        }
+        $hfmt = "\n%-6s %5s %6s %5s %6s %9s %8s %9s %8s %8s\n";
+        $fmt =    "%-6s %5s %6.1f %5d %6d %9d %8d %9d %8d %8d\n";
         printf $hfmt, @hdr;
         for my $proto (sort keys %out) {
             print "\n";
@@ -165,9 +169,13 @@ sub print_stats {
             $row->{dispd}, $row->{hdispd},
             $row->{queued}, $row->{qdrops};
     } else {
-        @hdr = qw(ID %CPU QLen WMark Handled Disp'd HDisp'd Queued QDrops);
-        $hfmt = "\n%5s %6s %5s %6s %8s %8s %8s %8s %5s\n";
-        $fmt =    "%5s %6.1f %5d %6d %8d %8d %8d %8d %5d\n";
+        if ($opts{S}) {
+            @hdr = qw(ID %CPU QLen WMark Handled Disp'd HDisp'd Queued QDrops);
+        } else {
+            @hdr = qw(ID %CPU QLen WMark Handled/s Disp'd/s HDisp'd/s Queued/s QDrops/s);
+        }
+        $hfmt = "\n%5s %6s %5s %6s %9s %8s %9s %8s %8s\n";
+        $fmt =    "%5s %6.1f %5d %6d %9d %8d %9d %8d %8d\n";
         printf $hfmt, @hdr;
         my $proto = "-";
         for my $id (sort keys %{$out{$proto}}) {
