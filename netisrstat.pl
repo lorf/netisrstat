@@ -101,7 +101,8 @@ sub print_stats {
 
             $outrow->{cpu} = $cpu_stats->{$id} || 0;
             $outrow->{qlen} += $row->{qlen};
-            $outrow->{wmark} += $row->{wmark};
+            $outrow->{wmark} = $row->{wmark}
+		if not $outrow->{wmark} or $row->{wmark} > $outrow->{wmark};
             $outrow->{handled} += ($row->{handled} - $prow->{handled}) / $outdiv;
             $outrow->{dispd} += ($row->{dispd} - $prow->{dispd}) / $outdiv;
             $outrow->{hdispd} += ($row->{hdispd} - $prow->{hdispd}) / $outdiv;
