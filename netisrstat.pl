@@ -4,16 +4,21 @@ use strict;
 use warnings;
 
 use Getopt::Std;
-use vars qw(%opts $interval $count $flag_collect_stats);
+use vars qw($me %opts $interval $count $flag_collect_stats);
 
 sub usage {
     print <<_EOT_;
-usage: $0 [-p] [-f <proto_filter>] [<interval> [<count>]]
+$me - report NetISR statistics
+
+usage: $me [-piePS] [-f <proto_filter>] [<interval> [<count>]]
 options:
   -p         Display statistics by protocol and ISR
              (default is to display by ISR);
-  -f filter  Protocol display filter (e.g. "ether,ip", empty by default);
-  -P         Shortcut for "-p -f ether,ip"
+  -f filter  Protocol display filter (e.g. "ether,ip",
+             default is to display all protocols);
+  -i         Shortcut for "-f ip", show only IP packet queues;
+  -e         Shortcut for "-f ether", show only Ethernet frame queues;
+  -P         Shortcut for "-p -f ether,ip";
   -S         Show values per interval rather than per second.
 _EOT_
     exit 1;
@@ -198,16 +203,24 @@ sub print_stats {
     }
 }
 
+($me = $0) =~ s!.*/!!;
+
 $interval = 1;
 $count = 0;
 my @proto_filter = ();
 
 &usage
-    if not getopts 'hpf:SP', \%opts or $opts{h};
+    if not getopts 'hpf:SPie', \%opts or $opts{h};
 
 if ($opts{P}) {
 	$opts{p} = 1;
 	$opts{f} = "ether,ip";
+}
+if ($opts{i}) {
+	$opts{f} = "ip";
+}
+if ($opts{e}) {
+	$opts{f} = "ether";
 }
 
 if (defined $opts{f}) {
